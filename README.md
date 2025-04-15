@@ -1,33 +1,43 @@
-# Interactive Loan Calculator
 
-## Overview
-This project is an **Interactive Loan Calculator** built using **Rust and WebAssembly (WASM)**. It provides an intuitive user interface to calculate and display monthly payments, total interest, and other key financial metrics based on user input.
+# 🌟 Interactive Loan Widget
 
-## Features
-- **Graphical Representations**: Visualised payment breakdowns and amortization schedules, using Chart.js
-- **Real-time calculations**: Updates calculations dynamically as users input loan details.
-- **Interactive UI**: User-friendly interface with easy input methods.
-- **Customizable Inputs**: Adjust loan amount, interest rate, and loan term.
+## 💡 Overview
+Welcome to the **Interactive Loan Calculator**! This project is crafted with **Rust** and **WebAssembly (WASM)** to provide an interactive, user-friendly experience for calculating monthly payments, total interest, and other key financial metrics based on your loan details.
+
+## 🎨 Features
+- **📊 Graphical Representations**: Visualize your payment breakdown and amortization schedule using **Chart.js**.
+- **⏱ Real-time Calculations**: See dynamic updates of calculations as you modify loan details.
+- **🖥 Interactive UI**: A sleek and user-friendly interface for easy input.
+- **🔧 Customizable Inputs**: Adjust loan amount, interest rate, and loan term to fit your needs.
+
+## Demo 🎥
+Check out this video showcasing the app in action:
 
 
-## Setup and Installation
-### Dependencies
-- **Rust**
-- **Python**
+https://github.com/user-attachments/assets/90661649-a1d7-4ffb-b9b0-6759754b4b3d
+
+
+## ⚙️ Setup and Installation
+
+### 🛠️ Dependencies
+Ensure you have the following dependencies installed:
+- **Rust** 🦀
+- **Python** 🐍
 - **wasm-pack**
 - **serde**
 
-### Steps
-1. Clone the repository:
+### 📝 Installation Steps
+1. **Clone the repository**:
    ```sh
    git clone https://github.com/shwamHari/interactive-loan-widget.git
    ```
-2. Build the WASM package:
+2. **Build the WASM package**:
    ```sh
    wasm-pack build --target web
    ```
-4. Start the application:
+3. **Start the application**:
    ```sh
    python -m http.server 8000
    ```
-5. Open your browser and go to `http://localhost:8000`
+4. Open your browser and go to:
+   [http://localhost:8000](http://localhost:8000)
