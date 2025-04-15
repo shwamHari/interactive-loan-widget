@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Loan Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            padding: 20px;
+            background: white;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 10px;
+            appearance: none;
+            background: #ddd;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #007bff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        #summary {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background: #f2f2f2;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+            background: white;
+        }
+
+        th, td {
+            border: 1px solid black;
+            padding: 10px;
+            text-align: right;
+        }
+
+        th {
+            background-color: #e9ecef;
+            text-align: center;
+        }
+
+        canvas {
+            width: 100% !important;
+            max-width: 100%;
+            display: block;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 600px) {
+            table, th, td {
+                font-size: 14px;
+                padding: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Loan Calculator</h1>
+
+        <label for="principal">Principal: </label>
+        <input type="number" id="principalInput" min="1000" max="10000000" step="1000" value="1000000">
+        <input type="range" id="principalSlider" min="1000" max="10000000" step="1000" value="1000000">
+
+        <label for="interestSlider">Interest Rate: <span id="interestValue">5</span>%</label>
+        <input type="range" id="interestSlider" min="0.1" max="15" step="0.1" value="5">
+
+        <label for="termSlider">Term: <span id="termValue">30</span> years</label>
+        <input type="range" id="termSlider" min="1" max="50" step="1" value="30">
+
+        <div id="summary">
+            <h2>Loan Summary</h2>
+            <table>
+                <tr><th>Monthly Payment</th><td id="monthlyPayment"></td></tr>
+                <tr><th>Yearly Payment</th><td id="yearlyPayment"></td></tr>
+                <tr><th>Total Interest Paid</th><td id="totalInterest"></td></tr>
+                <tr><th>Total Loan Cost</th><td id="totalCost"></td></tr>
+                <tr><th>Interest % of Total Cost</th><td id="interestPercentage"></td></tr>
+            </table>
+        </div>
+
+        <canvas id="lineChart"></canvas>
+        <canvas id="barChart"></canvas>
+
+        <h2>Amortization Schedule</h2>
+        <table id="amortization">
+            <thead>
+                <tr>
+                    <th>Year</th>
+                    <th>Payment</th>
+                    <th>Principal</th>
+                    <th>Interest</th>
+                    <th>Balance</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module">
+        import init, { calculate_yearly_payment, get_amortization_schedule } from './pkg/loan_calculator.js';
+
+        let lineChart, barChart;
+
+        async function run() {
+            await init();
+            calculate();
+        }
+        run();
+
+        window.calculate = function() {
+            const principal = parseFloat(document.getElementById('principalSlider').value);
+            const interest = parseFloat(document.getElementById('interestSlider').value);
+            const term = parseInt(document.getElementById('termSlider').value, 10);
+
+            try {
+                const yearlyPayment = calculate_yearly_payment(principal, interest, term);
+                const schedule = get_amortization_schedule(principal, interest, term);
+                const totalInterest = schedule.reduce((sum, row) => sum + row.interest_paid, 0);
+                const totalCost = yearlyPayment * term;
+                const monthlyPayment = yearlyPayment / 12;
+                const interestPercentage = (totalInterest / totalCost) * 100;
+
+                updateSummary(monthlyPayment, yearlyPayment, totalInterest, totalCost, interestPercentage);
+                updateAmortizationTable(schedule);
+                updateCharts(schedule);
+            } catch (e) {
+                console.error("Calculation Error:", e);
+                document.getElementById('result').innerText = `Error: ${e}`;
+            }
+        };
+
+        function updateSummary(monthlyPayment, yearlyPayment, totalInterest, totalCost, interestPercentage) {
+            document.getElementById('monthlyPayment').innerText = `$${monthlyPayment.toFixed(2)}`;
+            document.getElementById('yearlyPayment').innerText = `$${yearlyPayment.toFixed(2)}`;
+            document.getElementById('totalInterest').innerText = `$${totalInterest.toFixed(2)}`;
+            document.getElementById('totalCost').innerText = `$${totalCost.toFixed(2)}`;
+            document.getElementById('interestPercentage').innerText = `${interestPercentage.toFixed(2)}%`;
+        }
+
+        function updateAmortizationTable(schedule) {
+            const tbody = document.querySelector('#amortization tbody');
+            tbody.innerHTML = '';
+            schedule.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.year}</td>
+                    <td>$${row.payment.toFixed(2)}</td>
+                    <td>$${row.principal_paid.toFixed(2)}</td>
+                    <td>$${row.interest_paid.toFixed(2)}</td>
+                    <td>$${row.remaining_balance.toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateCharts(schedule) {
+            const years = schedule.map(row => row.year);
+
+            if (lineChart) lineChart.destroy();
+            lineChart = new Chart(document.getElementById('lineChart'), {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: 'Remaining Balance',
+                        data: schedule.map(row => row.remaining_balance),
+                        borderColor: '#4bc0c0',
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { title: { display: true, text: 'Balance Over Time' } }
+                }
+            });
+
+            if (barChart) barChart.destroy();
+            barChart = new Chart(document.getElementById('barChart'), {
+                type: 'bar',
+                data: {
+                    labels: years,
+                    datasets: [
+                        { label: 'Principal', data: schedule.map(row => row.principal_paid), backgroundColor: '#36a2eb' },
+                        { label: 'Interest', data: schedule.map(row => row.interest_paid), backgroundColor: '#ff6384' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { title: { display: true, text: 'Yearly Payments' } },
+                    scales: { x: { stacked: true }, y: { stacked: true } }
+                }
+            });
+        }
+
+        function updateSliders() {
+            document.getElementById('principalValue').innerText = document.getElementById('principalSlider').value;
+            document.getElementById('interestValue').innerText = document.getElementById('interestSlider').value;
+            document.getElementById('termValue').innerText = document.getElementById('termSlider').value;
+            calculate();
+        }
+
+        function updateValues() {
+        document.getElementById('interestValue').innerText = document.getElementById('interestSlider').value;
+        document.getElementById('termValue').innerText = document.getElementById('termSlider').value;
+    }
+
+    function syncAndCalculate() {
+        let principalInput = document.getElementById('principalInput');
+        let principalSlider = document.getElementById('principalSlider');
+
+        principalInput.addEventListener('input', function () {
+            principalSlider.value = this.value;
+            calculate();
+        });
+
+        principalSlider.addEventListener('input', function () {
+            principalInput.value = this.value;
+            calculate();
+        });
+
+        document.getElementById('interestSlider').addEventListener('input', function () {
+            updateValues();
+            calculate();
+        });
+
+        document.getElementById('termSlider').addEventListener('input', function () {
+            updateValues();
+            calculate();
+        });
+    }
+
+        document.getElementById('principalSlider').addEventListener('input', updateSliders);
+        document.getElementById('interestSlider').addEventListener('input', updateSliders);
+        document.getElementById('termSlider').addEventListener('input', updateSliders);
+
+        document.addEventListener('DOMContentLoaded', syncAndCalculate);
+    </script>
+</body>
+</html>
